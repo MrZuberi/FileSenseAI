@@ -15,7 +15,7 @@ import java.util.List;
 public class EmbeddingService {
 
     private final CohereClient cohereClient;
-    private final DocumentSplitter documentSplitter = DocumentSplitters.recursive(1500, 200);
+    private final DocumentSplitter documentSplitter = DocumentSplitters.recursive(800, 100);
 
     public EmbeddingService(CohereClient cohereClient) {
         this.cohereClient = cohereClient;
@@ -46,6 +46,20 @@ public class EmbeddingService {
             return fullText;
         }
 
-        return segments.get(0).text();
+        if (segments.size() == 1) {
+            return segments.get(0).text();
+        }
+
+        StringBuilder combined = new StringBuilder();
+        combined.append(segments.get(0).text());
+        combined.append(" ");
+        combined.append(segments.get(segments.size() / 2).text());
+
+        if (segments.size() > 2) {
+            combined.append(" ");
+            combined.append(segments.get(segments.size() - 1).text());
+        }
+
+        return combined.toString();
     }
 }

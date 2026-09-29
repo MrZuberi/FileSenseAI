@@ -1,5 +1,5 @@
 package com.filesenseai.pipeline;
 
 public interface ProgressListener {
-    void onStatus(String message);
+    void onProgress(String message, int current, int total);
 }

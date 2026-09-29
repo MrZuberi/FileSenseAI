@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,8 +43,8 @@ public class SortingPipeline {
     }
 
     public SortResult run(Path folder, boolean performBackup, ProgressListener progressListener) throws IOException {
-        progressListener.onStatus("Reading files from " + folder);
-        List<ExtractedDocument> documents = textExtractionService.extractFromFolder(folder);
+        progressListener.onProgress("Reading files from " + folder, 0, 0);
+        List<ExtractedDocument> documents = textExtractionService.extractFromFolder(folder, progressListener);
 
         if (documents.isEmpty()) {
             throw new IllegalStateException("No readable files were found in this folder");
@@ -50,25 +52,34 @@ public class SortingPipeline {
 
         String backupLocation = null;
         if (performBackup && s3BackupService.isConfigured()) {
-            progressListener.onStatus("Backing up original files to AWS S3");
+            progressListener.onProgress("Backing up original files to AWS S3", 0, 0);
             backupLocation = s3BackupService.backupFolder(folder);
         }
 
-        progressListener.onStatus("Generating embeddings for " + documents.size() + " files");
+        progressListener.onProgress("Generating embeddings for " + documents.size() + " files", 0, documents.size());
         List<EmbeddingResult> embeddings = embeddingService.embedDocuments(documents);
 
         int clusterCount = clusteringService.suggestClusterCount(documents.size());
-        progressListener.onStatus("Grouping files into " + clusterCount + " topics");
+        progressListener.onProgress("Grouping files into " + clusterCount + " topics", 0, 0);
         List<Integer> clusterLabels = clusteringService.assignClusters(embeddings, clusterCount);
 
-        progressListener.onStatus("Naming topic folders");
-        Map<Integer, String> clusterNames = clusterNamer.nameClusters(documents, clusterLabels);
+        progressListener.onProgress("Naming topic folders", 0, clusterCount);
+        Map<Integer, String> clusterNames = clusterNamer.nameClusters(documents, clusterLabels, progressListener);
 
-        progressListener.onStatus("Moving files into their new folders");
+        progressListener.onProgress("Moving files into their new folders", documents.size(), documents.size());
         OrganizePlan plan = fileOrganizer.buildPlan(documents, clusterLabels, clusterNames);
         fileOrganizer.applyPlan(folder, plan);
 
-        progressListener.onStatus("Done");
-        return new SortResult(plan.foldersToFiles(), backupLocation);
+        Map<String, List<String>> summary = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Path>> entry : plan.foldersToFiles().entrySet()) {
+            List<String> fileNames = new ArrayList<>();
+            for (Path path : entry.getValue()) {
+                fileNames.add(path.getFileName().toString());
+            }
+            summary.put(entry.getKey(), fileNames);
+        }
+
+        progressListener.onProgress("Done", documents.size(), documents.size());
+        return new SortResult(summary, backupLocation);
     }
 }

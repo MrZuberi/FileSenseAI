@@ -111,7 +111,7 @@ public class CohereClient {
 
             return sanitizeFolderName(rawName);
         } catch (Exception exception) {
-            return "Miscellaneous";
+            throw new RuntimeException("Failed to generate folder name with Cohere", exception);
         }
     }
 
@@ -124,7 +124,7 @@ public class CohereClient {
         }
 
         if (cleaned.isBlank()) {
-            cleaned = "Miscellaneous";
+            throw new RuntimeException("Cohere returned an empty folder name");
         }
 
         return cleaned;

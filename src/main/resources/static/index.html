@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FileSenseAI</title>
+<style>
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --card-border: #262b35;
+  --text: #e8eaed;
+  --text-dim: #9aa0ac;
+  --accent: #4fd1c5;
+  --accent-dark: #2c9a8f;
+  --danger: #ef5350;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+.app { width: 100%; max-width: 720px; }
+h1 { font-size: 28px; margin-bottom: 4px; }
+.subtitle { color: var(--text-dim); margin-bottom: 28px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.path-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; font-size: 14px; color: var(--text-dim);
+  word-break: break-all;
+}
+.folder-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 320px; overflow-y: auto; margin-bottom: 20px;
+}
+.folder-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  background: transparent; border: 1px solid transparent;
+}
+.folder-item:hover { background: #1e222b; border-color: var(--card-border); }
+.folder-icon { color: var(--accent); }
+.empty-note { color: var(--text-dim); font-size: 14px; padding: 10px 4px; }
+.footer-row { display: flex; justify-content: space-between; align-items: center; }
+.file-count { color: var(--text-dim); font-size: 14px; }
+button {
+  background: var(--accent); color: #04201d; border: none;
+  padding: 12px 20px; border-radius: 10px; font-weight: 600;
+  cursor: pointer; font-size: 14px;
+}
+button:hover { background: var(--accent-dark); }
+button:disabled { background: #2a2f3a; color: var(--text-dim); cursor: not-allowed; }
+button.secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
+.checkbox-row {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0; color: var(--text-dim); font-size: 14px;
+}
+.hidden { display: none; }
+.spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid var(--card-border); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.status-text { font-size: 15px; }
+.progress-track { height: 8px; background: #262b35; border-radius: 6px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+.result-list { display: flex; flex-direction: column; gap: 8px; margin: 18px 0; }
+.result-item {
+  display: flex; justify-content: space-between;
+  background: #1e222b; padding: 10px 14px; border-radius: 10px;
+}
+.result-count { color: var(--accent); font-weight: 600; }
+.done-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.done-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); color: #04201d;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700;
+}
+.error-text { color: var(--danger); margin: 14px 0; }
+.backup-note { color: var(--text-dim); font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>FileSenseAI</h1>
+  <div class="subtitle">Pick a folder and let AI sort it into topics</div>
+
+  <div id="browseView" class="card">
+    <div class="path-row" id="pathRow"></div>
+    <div class="folder-list" id="folderList"></div>
+    <div class="footer-row">
+      <div class="file-count" id="fileCount"></div>
+      <button id="organizeButton">Organize This Folder</button>
+    </div>
+    <div id="backupPanel" class="hidden">
+      <div class="checkbox-row">
+        <input type="checkbox" id="backupCheckbox">
+        <label for="backupCheckbox">Back up original files to AWS S3 first</label>
+      </div>
+      <div class="footer-row">
+        <button class="secondary" id="cancelStartButton">Cancel</button>
+        <button id="confirmStartButton">Start Sorting</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="progressView" class="card hidden">
+    <div class="status-row">
+      <div class="spinner"></div>
+      <div class="status-text" id="statusText">Starting...</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <div id="doneView" class="card hidden">
+    <div class="done-header">
+      <div class="done-icon">&#10003;</div>
+      <h2 style="margin:0;">Done</h2>
+    </div>
+    <div class="result-list" id="resultList"></div>
+    <div class="backup-note" id="backupNote"></div>
+    <button id="restartButton">Sort Another Folder</button>
+  </div>
+
+  <div id="errorView" class="card hidden">
+    <h2 style="margin:0;">Something went wrong</h2>
+    <div class="error-text" id="errorText"></div>
+    <button id="retryButton">Try Again</button>
+  </div>
+</div>
+
+<script>
+let currentPath = null;
+let pollTimer = null;
+
+const browseView = document.getElementById('browseView');
+const progressView = document.getElementById('progressView');
+const doneView = document.getElementById('doneView');
+const errorView = document.getElementById('errorView');
+
+const pathRow = document.getElementById('pathRow');
+const folderList = document.getElementById('folderList');
+const fileCountEl = document.getElementById('fileCount');
+const organizeButton = document.getElementById('organizeButton');
+const backupPanel = document.getElementById('backupPanel');
+const backupCheckbox = document.getElementById('backupCheckbox');
+const confirmStartButton = document.getElementById('confirmStartButton');
+const cancelStartButton = document.getElementById('cancelStartButton');
+
+const statusText = document.getElementById('statusText');
+const progressFill = document.getElementById('progressFill');
+
+const resultList = document.getElementById('resultList');
+const backupNote = document.getElementById('backupNote');
+const restartButton = document.getElementById('restartButton');
+
+const errorText = document.getElementById('errorText');
+const retryButton = document.getElementById('retryButton');
+
+function showView(view) {
+  browseView.classList.add('hidden');
+  progressView.classList.add('hidden');
+  doneView.classList.add('hidden');
+  errorView.classList.add('hidden');
+  view.classList.remove('hidden');
+}
+
+async function loadFolder(path) {
+  const query = path ? ('?path=' + encodeURIComponent(path)) : '';
+  const response = await fetch('/api/browse' + query);
+  const data = await response.json();
+
+  currentPath = data.currentPath;
+
+  pathRow.textContent = data.currentPath;
+  folderList.innerHTML = '';
+
+  if (data.parentPath) {
+    const upItem = document.createElement('div');
+    upItem.className = 'folder-item';
+    upItem.innerHTML = '<span class="folder-icon">&#8593;</span><span>.. (go up)</span>';
+    upItem.onclick = () => loadFolder(data.parentPath);
+    folderList.appendChild(upItem);
+  }
+
+  if (data.subFolders.length === 0) {
+    const note = document.createElement('div');
+    note.className = 'empty-note';
+    note.textContent = 'No subfolders here';
+    folderList.appendChild(note);
+  }
+
+  data.subFolders.forEach(folder => {
+    const item = document.createElement('div');
+    item.className = 'folder-item';
+    item.innerHTML = '<span class="folder-icon">&#128193;</span><span>' + folder.name + '</span>';
+    item.onclick = () => loadFolder(folder.path);
+    folderList.appendChild(item);
+  });
+
+  fileCountEl.textContent = data.fileCount + ' files in this folder';
+  organizeButton.disabled = data.fileCount === 0;
+  backupPanel.classList.add('hidden');
+}
+
+organizeButton.onclick = () => {
+  backupPanel.classList.remove('hidden');
+};
+
+cancelStartButton.onclick = () => {
+  backupPanel.classList.add('hidden');
+};
+
+confirmStartButton.onclick = async () => {
+  const response = await fetch('/api/jobs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folderPath: currentPath, backup: backupCheckbox.checked })
+  });
+  const data = await response.json();
+  showView(progressView);
+  pollJob(data.jobId);
+};
+
+function pollJob(jobId) {
+  pollTimer = setInterval(async () => {
+    const response = await fetch('/api/jobs/' + jobId);
+    const job = await response.json();
+
+    statusText.textContent = job.message;
+    if (job.total > 0) {
+      progressFill.style.width = Math.round((job.current / job.total) * 100) + '%';
+    } else {
+      progressFill.style.width = '100%';
+    }
+
+    if (job.status === 'DONE') {
+      clearInterval(pollTimer);
+      showDone(job.result);
+    } else if (job.status === 'ERROR') {
+      clearInterval(pollTimer);
+      errorText.textContent = job.errorMessage;
+      showView(errorView);
+    }
+  }, 600);
+}
+
+function showDone(result) {
+  resultList.innerHTML = '';
+  const folders = result.foldersToFiles;
+  Object.keys(folders).forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'result-item';
+    item.innerHTML = '<span>' + name + '</span><span class="result-count">' + folders[name].length + ' files</span>';
+    resultList.appendChild(item);
+  });
+
+  if (result.backupLocation) {
+    backupNote.textContent = 'Original files backed up to S3 at: ' + result.backupLocation;
+  } else {
+    backupNote.textContent = '';
+  }
+
+  showView(doneView);
+}
+
+restartButton.onclick = () => {
+  showView(browseView);
+  loadFolder(currentPath);
+};
+
+retryButton.onclick = () => {
+  showView(browseView);
+  loadFolder(currentPath);
+};
+
+loadFolder(null);
+</script>
+</body>
+</html>

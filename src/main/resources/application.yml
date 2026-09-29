@@ -3,10 +3,8 @@ filesenseai:
   aws-s3-bucket: ${AWS_S3_BUCKET:}
   aws-region: ${AWS_REGION:us-east-1}
 
-spring:
-  main:
-    web-application-type: none
-    log-startup-info: false
+server:
+  port: 8080
 
 logging:
   level:

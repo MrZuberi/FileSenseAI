@@ -2,7 +2,6 @@ package com.filesenseai.clustering;
 
 import com.filesenseai.embedding.EmbeddingResult;
 import org.springframework.stereotype.Service;
-import smile.clustering.CentroidClustering;
 import smile.clustering.KMeans;
 
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ public class ClusteringService {
             data[i] = row;
         }
 
-        CentroidClustering<double[], double[]> result = KMeans.fit(data, clusterCount, 100);
+        KMeans result = KMeans.fit(data, clusterCount, 100, 1E-4);
 
         List<Integer> labels = new ArrayList<>();
         for (int label : result.y) {
