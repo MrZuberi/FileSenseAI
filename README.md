@@ -51,9 +51,7 @@ A browser tab opens automatically at `http://localhost:8080`.
 
 1. The browser UI opens showing your home folder, click into subfolders to navigate.
 2. Once you're in the folder you want organized, click "Organize This Folder."
-3. Choose whether to back up to S3 first, if configured.
-4. Watch the live progress bar and status line as it reads, embeds, clusters, names, and moves your files.
-5. A "Done" screen shows every folder created and how many files landed in each.
+3. A "Done" screen shows every folder created and how many files landed in each.
 
 ## A Note on Scope
 
@@ -67,17 +65,16 @@ This section walks through the codebase in the order it was actually built.
 2. [`src/main/java/com/filesenseai/FileSenseAiApplication.java`](src/main/java/com/filesenseai/FileSenseAiApplication.java) is the entry point, starting Spring Boot's embedded web server.
 3. [`src/main/java/com/filesenseai/config/AppProperties.java`](src/main/java/com/filesenseai/config/AppProperties.java) reads the Cohere API key and optional AWS settings from environment variables.
 4. [`src/main/java/com/filesenseai/ai/CohereClient.java`](src/main/java/com/filesenseai/ai/CohereClient.java) is the only file that talks to Cohere directly, embedding batches of text and naming clusters, with real errors instead of silent fallbacks.
-5. [`src/main/java/com/filesenseai/backup/S3BackupService.java`](src/main/java/com/filesenseai/backup/S3BackupService.java) zips a folder and uploads it to S3.
-6. [`src/main/java/com/filesenseai/extraction/TextExtractionService.java`](src/main/java/com/filesenseai/extraction/TextExtractionService.java) extracts text from every file in a folder in parallel, reporting progress per file.
-7. [`src/main/java/com/filesenseai/embedding/EmbeddingService.java`](src/main/java/com/filesenseai/embedding/EmbeddingService.java) uses LangChain4j's document splitter to build a start-middle-end excerpt from each file, then embeds those with Cohere.
-8. [`src/main/java/com/filesenseai/clustering/ClusteringService.java`](src/main/java/com/filesenseai/clustering/ClusteringService.java) runs Smile's K-means algorithm on those vectors to group files into topic clusters.
-9. [`src/main/java/com/filesenseai/clustering/ClusterNamer.java`](src/main/java/com/filesenseai/clustering/ClusterNamer.java) names each cluster in parallel, falling back to a name built from real file names if the AI call fails.
-10. [`src/main/java/com/filesenseai/organize/FileOrganizer.java`](src/main/java/com/filesenseai/organize/FileOrganizer.java) builds a plan mapping folder names to files, then creates the folders and moves the files, handling name collisions safely.
-11. [`src/main/java/com/filesenseai/pipeline/SortingPipeline.java`](src/main/java/com/filesenseai/pipeline/SortingPipeline.java) strings every step together in order, reporting fine-grained progress throughout.
-12. [`src/main/java/com/filesenseai/job/JobManager.java`](src/main/java/com/filesenseai/job/JobManager.java) runs the pipeline in the background as a trackable job, so the web UI can poll its status without blocking.
-13. [`src/main/java/com/filesenseai/web/SortController.java`](src/main/java/com/filesenseai/web/SortController.java) exposes the REST API the frontend calls, folder browsing, starting a job, and checking job status.
-14. [`src/main/java/com/filesenseai/web/BrowserLauncher.java`](src/main/java/com/filesenseai/web/BrowserLauncher.java) automatically opens your default browser to the app once the server is ready.
-15. [`src/main/resources/static/index.html`](src/main/resources/static/index.html) is the entire frontend, the folder browser, the live progress bar, and the results screen.
+5. [`src/main/java/com/filesenseai/extraction/TextExtractionService.java`](src/main/java/com/filesenseai/extraction/TextExtractionService.java) extracts text from every file in a folder in parallel, reporting progress per file.
+6. [`src/main/java/com/filesenseai/embedding/EmbeddingService.java`](src/main/java/com/filesenseai/embedding/EmbeddingService.java) uses LangChain4j's document splitter to build a start-middle-end excerpt from each file, then embeds those with Cohere.
+7. [`src/main/java/com/filesenseai/clustering/ClusteringService.java`](src/main/java/com/filesenseai/clustering/ClusteringService.java) runs Smile's K-means algorithm on those vectors to group files into topic clusters.
+8. [`src/main/java/com/filesenseai/clustering/ClusterNamer.java`](src/main/java/com/filesenseai/clustering/ClusterNamer.java) names each cluster in parallel, falling back to a name built from real file names if the AI call fails.
+9. [`src/main/java/com/filesenseai/organize/FileOrganizer.java`](src/main/java/com/filesenseai/organize/FileOrganizer.java) builds a plan mapping folder names to files, then creates the folders and moves the files, handling name collisions safely.
+10. [`src/main/java/com/filesenseai/pipeline/SortingPipeline.java`](src/main/java/com/filesenseai/pipeline/SortingPipeline.java) strings every step together in order, reporting fine-grained progress throughout.
+11. [`src/main/java/com/filesenseai/job/JobManager.java`](src/main/java/com/filesenseai/job/JobManager.java) runs the pipeline in the background as a trackable job, so the web UI can poll its status without blocking.
+12. [`src/main/java/com/filesenseai/web/SortController.java`](src/main/java/com/filesenseai/web/SortController.java) exposes the REST API the frontend calls, folder browsing, starting a job, and checking job status.
+13. [`src/main/java/com/filesenseai/web/BrowserLauncher.java`](src/main/java/com/filesenseai/web/BrowserLauncher.java) automatically opens your default browser to the app once the server is ready.
+14. [`src/main/resources/static/index.html`](src/main/resources/static/index.html) is the entire frontend, the folder browser, the live progress bar, and the results screen.
 
 ## License
 
