@@ -1,6 +1,6 @@
-# FileSenseAI: An AI-Powered File Organizer
+# FileSenseAI
 
-FileSenseAI reads every file in a folder you choose, understands what each one is actually about using AI embeddings, groups them into topic clusters, has an AI name each topic, and reorganizes the folder so you end up with zero loose files, just a clean set of sensibly named topic folders. It runs as a local web app, opening automatically in your browser.
+FileSenseAI is an an AI-powered file organizer that reads every file in a folder you choose, understands what each one is actually about using AI embeddings, groups them into topic clusters, has an AI name each topic, and reorganizes the folder so you end up with zero loose files, just a clean set of sensibly named topic folders. It runs as a local web app, opening automatically in your browser.
 
 ## Key Features
 
