@@ -1,6 +1,5 @@
 package com.filesenseai.pipeline;
 
-import com.filesenseai.backup.S3BackupService;
 import com.filesenseai.clustering.ClusterNamer;
 import com.filesenseai.clustering.ClusteringService;
 import com.filesenseai.embedding.EmbeddingResult;
@@ -26,34 +25,25 @@ public class SortingPipeline {
     private final ClusteringService clusteringService;
     private final ClusterNamer clusterNamer;
     private final FileOrganizer fileOrganizer;
-    private final S3BackupService s3BackupService;
 
     public SortingPipeline(TextExtractionService textExtractionService,
                             EmbeddingService embeddingService,
                             ClusteringService clusteringService,
                             ClusterNamer clusterNamer,
-                            FileOrganizer fileOrganizer,
-                            S3BackupService s3BackupService) {
+                            FileOrganizer fileOrganizer) {
         this.textExtractionService = textExtractionService;
         this.embeddingService = embeddingService;
         this.clusteringService = clusteringService;
         this.clusterNamer = clusterNamer;
         this.fileOrganizer = fileOrganizer;
-        this.s3BackupService = s3BackupService;
     }
 
-    public SortResult run(Path folder, boolean performBackup, ProgressListener progressListener) throws IOException {
+    public SortResult run(Path folder, ProgressListener progressListener) throws IOException {
         progressListener.onProgress("Reading files from " + folder, 0, 0);
         List<ExtractedDocument> documents = textExtractionService.extractFromFolder(folder, progressListener);
 
         if (documents.isEmpty()) {
-            throw new IllegalStateException("No readable files were found in this folder");
-        }
-
-        String backupLocation = null;
-        if (performBackup && s3BackupService.isConfigured()) {
-            progressListener.onProgress("Backing up original files to AWS S3", 0, 0);
-            backupLocation = s3BackupService.backupFolder(folder);
+            throw new IllegalStateException("No files were found in this folder");
         }
 
         progressListener.onProgress("Generating embeddings for " + documents.size() + " files", 0, documents.size());
@@ -80,6 +70,6 @@ public class SortingPipeline {
         }
 
         progressListener.onProgress("Done", documents.size(), documents.size());
-        return new SortResult(summary, backupLocation);
+        return new SortResult(summary);
     }
 }

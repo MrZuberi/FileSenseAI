@@ -6,6 +6,7 @@ import org.apache.tika.metadata.Metadata;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,6 +32,10 @@ public class TextExtractionService {
             files = paths.filter(Files::isRegularFile).toList();
         }
 
+        if (files.isEmpty()) {
+            return List.of();
+        }
+
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
         AtomicInteger completed = new AtomicInteger(0);
         List<Future<ExtractedDocument>> futures = new ArrayList<>();
@@ -50,7 +55,7 @@ public class TextExtractionService {
             try {
                 documents.add(future.get());
             } catch (Exception exception) {
-                continue;
+                System.err.println("A file processing task failed unexpectedly: " + exception);
             }
         }
 
@@ -59,16 +64,23 @@ public class TextExtractionService {
     }
 
     private ExtractedDocument buildDocument(Path file) {
-        return new ExtractedDocument(file, extractContent(file));
+        try {
+            return new ExtractedDocument(file, extractContent(file));
+        } catch (Exception exception) {
+            System.err.println("Falling back to filename only for " + file + ": " + exception);
+            return new ExtractedDocument(file, file.getFileName().toString());
+        }
     }
 
     private String extractContent(Path file) {
         Metadata metadata = new Metadata();
-        String parsedText = "";
+        String parsedText;
 
         try {
             Tika tika = new Tika();
-            parsedText = tika.parseToString(file.toFile(), metadata);
+            try (InputStream inputStream = Files.newInputStream(file)) {
+                parsedText = tika.parseToString(inputStream, metadata);
+            }
         } catch (Exception exception) {
             parsedText = "";
         }
@@ -96,14 +108,19 @@ public class TextExtractionService {
         description.append(baseName.replaceAll("[_\\-.]+", " ")).append(" ");
         description.append(categoryForExtension(extension)).append(" ");
 
-        for (String name : metadata.names()) {
-            String value = metadata.get(name);
-            if (value != null && !value.isBlank() && isUsefulMetadataField(name)) {
-                description.append(value).append(" ");
+        try {
+            for (String name : metadata.names()) {
+                String value = metadata.get(name);
+                if (value != null && !value.isBlank() && isUsefulMetadataField(name)) {
+                    description.append(value).append(" ");
+                }
             }
+        } catch (Exception exception) {
+            System.err.println("Could not read metadata for " + file + ": " + exception);
         }
 
-        return description.toString().trim();
+        String result = description.toString().trim();
+        return result.isBlank() ? fileName : result;
     }
 
     private boolean isUsefulMetadataField(String name) {

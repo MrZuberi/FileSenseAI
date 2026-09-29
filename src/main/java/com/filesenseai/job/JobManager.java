@@ -22,14 +22,14 @@ public class JobManager {
         this.sortingPipeline = sortingPipeline;
     }
 
-    public String startJob(Path folder, boolean performBackup) {
+    public String startJob(Path folder) {
         String jobId = UUID.randomUUID().toString();
         SortJob job = new SortJob();
         jobs.put(jobId, job);
 
         executorService.submit(() -> {
             try {
-                SortResult result = sortingPipeline.run(folder, performBackup, (message, current, total) -> {
+                SortResult result = sortingPipeline.run(folder, (message, current, total) -> {
                     job.setMessage(message);
                     job.setCurrent(current);
                     job.setTotal(total);

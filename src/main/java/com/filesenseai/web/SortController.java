@@ -102,7 +102,7 @@ public class SortController {
     @PostMapping("/jobs")
     public StartJobResponse startJob(@RequestBody StartJobRequest request) {
         Path folder = Paths.get(request.folderPath());
-        String jobId = jobManager.startJob(folder, request.backup());
+        String jobId = jobManager.startJob(folder);
         return new StartJobResponse(jobId);
     }
 

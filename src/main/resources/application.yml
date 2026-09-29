@@ -1,7 +1,5 @@
 filesenseai:
   cohere-api-key: ${COHERE_API_KEY:}
-  aws-s3-bucket: ${AWS_S3_BUCKET:}
-  aws-region: ${AWS_REGION:us-east-1}
 
 server:
   port: 8080

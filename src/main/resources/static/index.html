@@ -80,11 +80,6 @@ button {
 button:hover { background: var(--accent-dark); }
 button:active { transform: scale(0.98); }
 button:disabled { background: #2a2f3a; color: var(--text-dim); cursor: not-allowed; }
-button.secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
-.checkbox-row {
-  display: flex; align-items: center; gap: 10px;
-  margin: 16px 0; color: var(--text-dim); font-size: 14px;
-}
 .hidden { display: none; }
 .spinner {
   width: 22px; height: 22px; border-radius: 50%;
@@ -114,7 +109,6 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
   font-size: 22px; font-weight: 700; flex-shrink: 0;
 }
 .error-text { color: var(--danger); margin: 14px 0; font-size: 14px; }
-.backup-note { color: var(--text-dim); font-size: 13px; margin-top: 14px; }
 </style>
 </head>
 <body>
@@ -128,16 +122,6 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
     <div class="summary-line" id="summaryLine"></div>
     <div class="footer-row">
       <button id="organizeButton">Organize This Folder</button>
-    </div>
-    <div id="backupPanel" class="hidden">
-      <div class="checkbox-row">
-        <input type="checkbox" id="backupCheckbox">
-        <label for="backupCheckbox">Back up original files to AWS S3 first</label>
-      </div>
-      <div class="footer-row">
-        <button class="secondary" id="cancelStartButton">Cancel</button>
-        <button id="confirmStartButton">Start Sorting</button>
-      </div>
     </div>
   </div>
 
@@ -155,7 +139,6 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
       <h2 style="margin:0;">Done, everything is organized</h2>
     </div>
     <div class="result-list" id="resultList"></div>
-    <div class="backup-note" id="backupNote"></div>
     <div class="footer-row" style="margin-top: 8px;">
       <button id="restartButton">Sort Another Folder</button>
     </div>
@@ -172,7 +155,6 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
 
 <script>
 let currentPath = null;
-let isDriveList = true;
 let pollTimer = null;
 
 const browseView = document.getElementById('browseView');
@@ -184,16 +166,11 @@ const breadcrumbsEl = document.getElementById('breadcrumbs');
 const entryList = document.getElementById('entryList');
 const summaryLine = document.getElementById('summaryLine');
 const organizeButton = document.getElementById('organizeButton');
-const backupPanel = document.getElementById('backupPanel');
-const backupCheckbox = document.getElementById('backupCheckbox');
-const confirmStartButton = document.getElementById('confirmStartButton');
-const cancelStartButton = document.getElementById('cancelStartButton');
 
 const statusText = document.getElementById('statusText');
 const progressFill = document.getElementById('progressFill');
 
 const resultList = document.getElementById('resultList');
-const backupNote = document.getElementById('backupNote');
 const restartButton = document.getElementById('restartButton');
 
 const errorText = document.getElementById('errorText');
@@ -266,7 +243,6 @@ async function loadFolder(path) {
   const data = await response.json();
 
   currentPath = data.currentPath;
-  isDriveList = data.isDriveList;
 
   renderBreadcrumbs(buildBreadcrumbs(data.currentPath, data.isDriveList));
 
@@ -311,22 +287,13 @@ async function loadFolder(path) {
     : (data.files.length + ' files, ' + data.subFolders.length + ' folders');
 
   organizeButton.disabled = data.isDriveList || data.files.length === 0;
-  backupPanel.classList.add('hidden');
 }
 
-organizeButton.onclick = () => {
-  backupPanel.classList.remove('hidden');
-};
-
-cancelStartButton.onclick = () => {
-  backupPanel.classList.add('hidden');
-};
-
-confirmStartButton.onclick = async () => {
+organizeButton.onclick = async () => {
   const response = await fetch('/api/jobs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ folderPath: currentPath, backup: backupCheckbox.checked })
+    body: JSON.stringify({ folderPath: currentPath })
   });
   const data = await response.json();
   showView(progressView);
@@ -363,10 +330,6 @@ function showDone(result) {
       + '<span class="result-count">' + folders[name].length + ' files</span>';
     resultList.appendChild(item);
   });
-
-  backupNote.textContent = result.backupLocation
-    ? 'Original files backed up to S3 at: ' + result.backupLocation
-    : '';
 
   showView(doneView);
 }
