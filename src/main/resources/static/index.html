@@ -6,11 +6,12 @@
 <title>FileSenseAI</title>
 <style>
 :root {
-  --bg: #0f1115;
-  --card: #171a21;
-  --card-border: #262b35;
-  --text: #e8eaed;
-  --text-dim: #9aa0ac;
+  --bg: #0d0f14;
+  --card: #161a22;
+  --card-border: #262c38;
+  --row-hover: #1e2430;
+  --text: #edeff3;
+  --text-dim: #8b93a3;
   --accent: #4fd1c5;
   --accent-dark: #2c9a8f;
   --danger: #ef5350;
@@ -18,48 +19,66 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(circle at top, #131722 0%, var(--bg) 60%);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   display: flex;
   justify-content: center;
   padding: 40px 20px;
+  min-height: 100vh;
 }
-.app { width: 100%; max-width: 720px; }
-h1 { font-size: 28px; margin-bottom: 4px; }
-.subtitle { color: var(--text-dim); margin-bottom: 28px; }
+.app { width: 100%; max-width: 760px; }
+.title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.title-icon { font-size: 26px; }
+h1 { font-size: 26px; margin: 0; }
+.subtitle { color: var(--text-dim); margin-bottom: 26px; font-size: 14px; }
 .card {
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 22px;
   margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
 }
-.path-row {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px; font-size: 14px; color: var(--text-dim);
-  word-break: break-all;
+.breadcrumbs {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin-bottom: 16px; font-size: 13px;
 }
-.folder-list {
-  display: flex; flex-direction: column; gap: 6px;
-  max-height: 320px; overflow-y: auto; margin-bottom: 20px;
+.crumb {
+  color: var(--text-dim); cursor: pointer; padding: 4px 8px;
+  border-radius: 8px; transition: background 0.15s ease, color 0.15s ease;
 }
-.folder-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; border-radius: 10px; cursor: pointer;
-  background: transparent; border: 1px solid transparent;
+.crumb:hover { background: var(--row-hover); color: var(--text); }
+.crumb.active { color: var(--accent); font-weight: 600; cursor: default; }
+.crumb.active:hover { background: none; }
+.crumb-sep { color: var(--card-border); }
+.entry-list {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 360px; overflow-y: auto; margin-bottom: 18px;
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+  padding: 6px 0;
 }
-.folder-item:hover { background: #1e222b; border-color: var(--card-border); }
-.folder-icon { color: var(--accent); }
-.empty-note { color: var(--text-dim); font-size: 14px; padding: 10px 4px; }
-.footer-row { display: flex; justify-content: space-between; align-items: center; }
-.file-count { color: var(--text-dim); font-size: 14px; }
+.entry-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: 10px;
+}
+.entry-row.folder { cursor: pointer; transition: background 0.15s ease; }
+.entry-row.folder:hover { background: var(--row-hover); }
+.entry-icon { font-size: 18px; width: 22px; text-align: center; }
+.entry-name { flex: 1; font-size: 14px; }
+.entry-name.file-name { color: var(--text-dim); }
+.entry-size { font-size: 12px; color: var(--text-dim); min-width: 60px; text-align: right; }
+.empty-note { color: var(--text-dim); font-size: 14px; padding: 16px 4px; text-align: center; }
+.summary-line { color: var(--text-dim); font-size: 13px; margin-bottom: 16px; }
+.footer-row { display: flex; justify-content: flex-end; gap: 10px; }
 button {
   background: var(--accent); color: #04201d; border: none;
   padding: 12px 20px; border-radius: 10px; font-weight: 600;
-  cursor: pointer; font-size: 14px;
+  cursor: pointer; font-size: 14px; transition: background 0.15s ease, transform 0.1s ease;
 }
 button:hover { background: var(--accent-dark); }
+button:active { transform: scale(0.98); }
 button:disabled { background: #2a2f3a; color: var(--text-dim); cursor: not-allowed; }
 button.secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text); }
 .checkbox-row {
@@ -70,40 +89,44 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
 .spinner {
   width: 22px; height: 22px; border-radius: 50%;
   border: 3px solid var(--card-border); border-top-color: var(--accent);
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.8s linear infinite; flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .status-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
 .status-text { font-size: 15px; }
-.progress-track { height: 8px; background: #262b35; border-radius: 6px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+.progress-track { position: relative; height: 10px; background: #1e222c; border-radius: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-dark), var(--accent)); transition: width 0.3s ease; }
 .result-list { display: flex; flex-direction: column; gap: 8px; margin: 18px 0; }
 .result-item {
-  display: flex; justify-content: space-between;
-  background: #1e222b; padding: 10px 14px; border-radius: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: #1a1f29; padding: 12px 16px; border-radius: 12px;
 }
-.result-count { color: var(--accent); font-weight: 600; }
-.done-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.result-name { display: flex; align-items: center; gap: 10px; }
+.result-count {
+  color: var(--accent); font-weight: 700; background: rgba(79,209,197,0.12);
+  padding: 3px 10px; border-radius: 20px; font-size: 12px;
+}
+.done-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .done-icon {
-  width: 40px; height: 40px; border-radius: 50%;
+  width: 42px; height: 42px; border-radius: 50%;
   background: var(--accent); color: #04201d;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 700;
+  font-size: 22px; font-weight: 700; flex-shrink: 0;
 }
-.error-text { color: var(--danger); margin: 14px 0; }
-.backup-note { color: var(--text-dim); font-size: 13px; margin-top: 12px; }
+.error-text { color: var(--danger); margin: 14px 0; font-size: 14px; }
+.backup-note { color: var(--text-dim); font-size: 13px; margin-top: 14px; }
 </style>
 </head>
 <body>
 <div class="app">
-  <h1>FileSenseAI</h1>
-  <div class="subtitle">Pick a folder and let AI sort it into topics</div>
+  <div class="title-row"><span class="title-icon">&#128194;</span><h1>FileSenseAI</h1></div>
+  <div class="subtitle">Browse to a folder and let AI sort everything in it by topic</div>
 
   <div id="browseView" class="card">
-    <div class="path-row" id="pathRow"></div>
-    <div class="folder-list" id="folderList"></div>
+    <div class="breadcrumbs" id="breadcrumbs"></div>
+    <div class="entry-list" id="entryList"></div>
+    <div class="summary-line" id="summaryLine"></div>
     <div class="footer-row">
-      <div class="file-count" id="fileCount"></div>
       <button id="organizeButton">Organize This Folder</button>
     </div>
     <div id="backupPanel" class="hidden">
@@ -123,30 +146,33 @@ button.secondary { background: transparent; border: 1px solid var(--card-border)
       <div class="spinner"></div>
       <div class="status-text" id="statusText">Starting...</div>
     </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
   </div>
 
   <div id="doneView" class="card hidden">
     <div class="done-header">
       <div class="done-icon">&#10003;</div>
-      <h2 style="margin:0;">Done</h2>
+      <h2 style="margin:0;">Done, everything is organized</h2>
     </div>
     <div class="result-list" id="resultList"></div>
     <div class="backup-note" id="backupNote"></div>
-    <button id="restartButton">Sort Another Folder</button>
+    <div class="footer-row" style="margin-top: 8px;">
+      <button id="restartButton">Sort Another Folder</button>
+    </div>
   </div>
 
   <div id="errorView" class="card hidden">
     <h2 style="margin:0;">Something went wrong</h2>
     <div class="error-text" id="errorText"></div>
-    <button id="retryButton">Try Again</button>
+    <div class="footer-row">
+      <button id="retryButton">Try Again</button>
+    </div>
   </div>
 </div>
 
 <script>
 let currentPath = null;
+let isDriveList = true;
 let pollTimer = null;
 
 const browseView = document.getElementById('browseView');
@@ -154,9 +180,9 @@ const progressView = document.getElementById('progressView');
 const doneView = document.getElementById('doneView');
 const errorView = document.getElementById('errorView');
 
-const pathRow = document.getElementById('pathRow');
-const folderList = document.getElementById('folderList');
-const fileCountEl = document.getElementById('fileCount');
+const breadcrumbsEl = document.getElementById('breadcrumbs');
+const entryList = document.getElementById('entryList');
+const summaryLine = document.getElementById('summaryLine');
 const organizeButton = document.getElementById('organizeButton');
 const backupPanel = document.getElementById('backupPanel');
 const backupCheckbox = document.getElementById('backupCheckbox');
@@ -181,41 +207,110 @@ function showView(view) {
   view.classList.remove('hidden');
 }
 
+function iconFor(extension) {
+  const map = {
+    jpg: '\u{1F5BC}\u{FE0F}', jpeg: '\u{1F5BC}\u{FE0F}', png: '\u{1F5BC}\u{FE0F}', gif: '\u{1F5BC}\u{FE0F}',
+    bmp: '\u{1F5BC}\u{FE0F}', webp: '\u{1F5BC}\u{FE0F}', heic: '\u{1F5BC}\u{FE0F}', tiff: '\u{1F5BC}\u{FE0F}',
+    mp4: '\u{1F3AC}', mov: '\u{1F3AC}', avi: '\u{1F3AC}', mkv: '\u{1F3AC}', wmv: '\u{1F3AC}',
+    mp3: '\u{1F3B5}', wav: '\u{1F3B5}', flac: '\u{1F3B5}', aac: '\u{1F3B5}', m4a: '\u{1F3B5}',
+    zip: '\u{1F5DC}\u{FE0F}', rar: '\u{1F5DC}\u{FE0F}', '7z': '\u{1F5DC}\u{FE0F}', tar: '\u{1F5DC}\u{FE0F}', gz: '\u{1F5DC}\u{FE0F}',
+    pdf: '\u{1F4D5}', doc: '\u{1F4DD}', docx: '\u{1F4DD}',
+    xls: '\u{1F4CA}', xlsx: '\u{1F4CA}', csv: '\u{1F4CA}',
+    ppt: '\u{1F4FD}\u{FE0F}', pptx: '\u{1F4FD}\u{FE0F}',
+    exe: '\u{2699}\u{FE0F}', msi: '\u{2699}\u{FE0F}'
+  };
+  return map[extension] || '\u{1F4C4}';
+}
+
+function buildBreadcrumbs(path, driveList) {
+  const crumbs = [{ label: 'This PC', path: null }];
+  if (driveList) return crumbs;
+
+  const normalized = path.replace(/\\+$/, '');
+  const parts = normalized.split(/\\/).filter(p => p.length > 0);
+  let cumulative = '';
+
+  parts.forEach((part, index) => {
+    cumulative = index === 0
+      ? (part.endsWith(':') ? part + '\\' : part)
+      : (cumulative.endsWith('\\') ? cumulative + part : cumulative + '\\' + part);
+    crumbs.push({ label: part, path: cumulative });
+  });
+
+  return crumbs;
+}
+
+function renderBreadcrumbs(crumbs) {
+  breadcrumbsEl.innerHTML = '';
+  crumbs.forEach((crumb, index) => {
+    const el = document.createElement('span');
+    el.className = 'crumb' + (index === crumbs.length - 1 ? ' active' : '');
+    el.textContent = crumb.label;
+    if (index !== crumbs.length - 1) {
+      el.onclick = () => loadFolder(crumb.path);
+    }
+    breadcrumbsEl.appendChild(el);
+
+    if (index !== crumbs.length - 1) {
+      const sep = document.createElement('span');
+      sep.className = 'crumb-sep';
+      sep.textContent = '/';
+      breadcrumbsEl.appendChild(sep);
+    }
+  });
+}
+
 async function loadFolder(path) {
   const query = path ? ('?path=' + encodeURIComponent(path)) : '';
   const response = await fetch('/api/browse' + query);
   const data = await response.json();
 
   currentPath = data.currentPath;
+  isDriveList = data.isDriveList;
 
-  pathRow.textContent = data.currentPath;
-  folderList.innerHTML = '';
+  renderBreadcrumbs(buildBreadcrumbs(data.currentPath, data.isDriveList));
 
-  if (data.parentPath) {
+  entryList.innerHTML = '';
+
+  const crumbs = buildBreadcrumbs(data.currentPath, data.isDriveList);
+  if (crumbs.length > 1) {
     const upItem = document.createElement('div');
-    upItem.className = 'folder-item';
-    upItem.innerHTML = '<span class="folder-icon">&#8593;</span><span>.. (go up)</span>';
-    upItem.onclick = () => loadFolder(data.parentPath);
-    folderList.appendChild(upItem);
-  }
-
-  if (data.subFolders.length === 0) {
-    const note = document.createElement('div');
-    note.className = 'empty-note';
-    note.textContent = 'No subfolders here';
-    folderList.appendChild(note);
+    upItem.className = 'entry-row folder';
+    upItem.innerHTML = '<span class="entry-icon">&#8593;</span><span class="entry-name">.. (go up)</span>';
+    upItem.onclick = () => loadFolder(crumbs[crumbs.length - 2].path);
+    entryList.appendChild(upItem);
   }
 
   data.subFolders.forEach(folder => {
     const item = document.createElement('div');
-    item.className = 'folder-item';
-    item.innerHTML = '<span class="folder-icon">&#128193;</span><span>' + folder.name + '</span>';
+    item.className = 'entry-row folder';
+    const icon = data.isDriveList ? '\u{1F4BD}' : '\u{1F4C1}';
+    item.innerHTML = '<span class="entry-icon">' + icon + '</span><span class="entry-name">' + folder.name + '</span>';
     item.onclick = () => loadFolder(folder.path);
-    folderList.appendChild(item);
+    entryList.appendChild(item);
   });
 
-  fileCountEl.textContent = data.fileCount + ' files in this folder';
-  organizeButton.disabled = data.fileCount === 0;
+  data.files.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'entry-row';
+    item.innerHTML = '<span class="entry-icon">' + iconFor(file.extension) + '</span>'
+      + '<span class="entry-name file-name">' + file.name + '</span>'
+      + '<span class="entry-size">' + file.sizeLabel + '</span>';
+    entryList.appendChild(item);
+  });
+
+  if (data.subFolders.length === 0 && data.files.length === 0) {
+    const note = document.createElement('div');
+    note.className = 'empty-note';
+    note.textContent = data.isDriveList ? 'No drives found' : 'This folder is empty';
+    entryList.appendChild(note);
+  }
+
+  summaryLine.textContent = data.isDriveList
+    ? 'Choose a drive to browse'
+    : (data.files.length + ' files, ' + data.subFolders.length + ' folders');
+
+  organizeButton.disabled = data.isDriveList || data.files.length === 0;
   backupPanel.classList.add('hidden');
 }
 
@@ -244,11 +339,7 @@ function pollJob(jobId) {
     const job = await response.json();
 
     statusText.textContent = job.message;
-    if (job.total > 0) {
-      progressFill.style.width = Math.round((job.current / job.total) * 100) + '%';
-    } else {
-      progressFill.style.width = '100%';
-    }
+    progressFill.style.width = job.total > 0 ? Math.round((job.current / job.total) * 100) + '%' : '100%';
 
     if (job.status === 'DONE') {
       clearInterval(pollTimer);
@@ -264,18 +355,18 @@ function pollJob(jobId) {
 function showDone(result) {
   resultList.innerHTML = '';
   const folders = result.foldersToFiles;
+
   Object.keys(folders).forEach(name => {
     const item = document.createElement('div');
     item.className = 'result-item';
-    item.innerHTML = '<span>' + name + '</span><span class="result-count">' + folders[name].length + ' files</span>';
+    item.innerHTML = '<span class="result-name">\u{1F4C1} ' + name + '</span>'
+      + '<span class="result-count">' + folders[name].length + ' files</span>';
     resultList.appendChild(item);
   });
 
-  if (result.backupLocation) {
-    backupNote.textContent = 'Original files backed up to S3 at: ' + result.backupLocation;
-  } else {
-    backupNote.textContent = '';
-  }
+  backupNote.textContent = result.backupLocation
+    ? 'Original files backed up to S3 at: ' + result.backupLocation
+    : '';
 
   showView(doneView);
 }

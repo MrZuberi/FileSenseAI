@@ -110,7 +110,11 @@ public class ClusterNamer {
         String mostCommon = wordCounts.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
-                .orElse("Group");
+                .orElse(null);
+
+        if (mostCommon == null) {
+            return "Miscellaneous";
+        }
 
         String capitalized = mostCommon.substring(0, 1).toUpperCase() + mostCommon.substring(1);
         return capitalized + " Files";
