@@ -1,16 +1,13 @@
-# FileSenseAI: An AI-Powered File Organizer
+# FileSenseAI
 
-FileSenseAI reads every file in a folder you choose, understands what each one is actually about using AI embeddings, groups them into topic clusters, has an AI name each topic, and reorganizes the folder so you end up with zero loose files, just a clean set of sensibly named topic folders. It runs as a local web app, opening automatically in your browser.
+FileSenseAI is an an AI-powered file organizer that reads every file in a folder you choose, understands what each one is actually about using AI embeddings, groups them into topic clusters, has an AI name each topic, and reorganizes the folder so you end up with zero loose files, just a clean set of sensibly named topic folders. It runs as a local web app, opening automatically in your browser.
 
 ## Key Features
 
-- **Clean Browser UI**: A single Spring Boot process serves a modern, dark-themed local web app that opens automatically, no separate frontend build, no Node.js required.
 - **Understands File Content, Not Just File Names**: Uses Apache Tika to extract real text from PDFs, Word documents, and plain text files, then Cohere's embedding model to understand what each file is actually about.
 - **Automatic Topic Clustering**: Groups files by genuine semantic similarity using K-means clustering, not by file extension or naming pattern.
 - **AI-Named Folders, With a Smart Fallback**: An LLM names each cluster based on its real content. If that call ever fails, the fallback name is built from the cluster's actual file names instead of a generic bucket.
 - **Fast**: File reading and folder naming both run in parallel across multiple threads.
-- **Live, Honest Progress**: A real progress bar and status line update in real time, showing exactly what's happening and when it's actually done.
-- **Optional Cloud Backup**: Can back up your original files to AWS S3 as a zip archive before touching anything.
 - **Safe File Moves**: Automatically renames on collision rather than overwriting if two files would land in the same folder with the same name.
 
 ## Technologies Used
@@ -21,8 +18,7 @@ FileSenseAI reads every file in a folder you choose, understands what each one i
 - **LangChain4j**: Provides the document splitting utility used to extract representative excerpts from each file before embedding.
 - **Cohere**: The embedding model that turns file content into a vector, and the language model that names each topic cluster.
 - **Smile**: Java's machine learning library, used for K-means clustering of the embedding vectors.
-- **AWS S3 (AWS SDK v2)**: Optional backup of your original files before reorganizing.
-- **Vanilla HTML, CSS, and JavaScript**: The local web UI, served directly by Spring Boot with no separate build step.
+- **HTML, CSS, and JavaScript**: The local web UI, served directly by Spring Boot with no separate build step.
 - **Maven**: Build tool.
 
 ## How Files Get Sorted
@@ -40,7 +36,6 @@ FileSenseAI reads every file in a folder you choose, understands what each one i
 - JDK 17
 - Maven 3.9 or later
 - A free Cohere API key from `https://dashboard.cohere.com/api-keys`
-- (Optional) AWS credentials and an S3 bucket, only needed for the backup feature
 
 ## Installation
 
@@ -63,23 +58,6 @@ A browser tab opens automatically at `http://localhost:8080`.
 ## A Note on Scope
 
 FileSenseAI organizes one folder you point it at, it does not run in the background watching your whole file system. That's a deliberate, focused choice.
-
-## A Note on the UI Decision
-
-The original plan considered Angular for the frontend. Angular requires its own separate toolchain, Node.js, npm, and the Angular CLI, entirely apart from the Java build. To keep the project to one build system and avoid a second point of failure, the UI is instead a single, self-contained HTML page served directly by Spring Boot, styled to look like a real modern app, with none of the extra tooling.
-
-## Project Structure
-
-- **config**: Spring configuration, application properties, and bean wiring for Cohere and AWS.
-- **extraction**: Parallelized Apache Tika text extraction from files.
-- **ai**: The low-level Cohere HTTP client used for both embeddings and folder naming.
-- **embedding**: Turns extracted file text into embedding vectors, using LangChain4j's document splitter to build a representative excerpt from the start, middle, and end of each file.
-- **clustering**: Smile K-means clustering, and parallelized, fallback-aware AI folder naming.
-- **organize**: Builds the plan for which files go into which folder, and safely applies it.
-- **backup**: Optional AWS S3 backup of the original folder before reorganizing.
-- **pipeline**: Orchestrates the whole process end to end, reporting fine-grained progress at every stage.
-- **job**: Tracks each sorting run as a background job so the web UI can poll its live status.
-- **web**: The REST API and the automatic browser launcher.
 
 ## How It Works
 
